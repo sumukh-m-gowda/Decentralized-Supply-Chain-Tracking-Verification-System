@@ -1,0 +1,2 @@
+-- triggers.sql — TODO: we will write this together.
+-- The app expects the objects described in CONTRACT.md.
