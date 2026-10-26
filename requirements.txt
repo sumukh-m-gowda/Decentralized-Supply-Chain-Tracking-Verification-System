@@ -1,0 +1,95 @@
+# =====================================================================
+# TraceLedger — Decentralized Supply Chain Tracking & Verification
+# requirements.txt  (everything needed to run this project)
+#
+# NOTE: this is a Node.js project, so the real package list that npm
+# reads is package.json (+ package-lock.json). This file documents the
+# full stack in one place. You do NOT install this file with pip.
+# Install the packages with:   npm install
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. SOFTWARE TO INSTALL ON YOUR MACHINE
+# ---------------------------------------------------------------------
+Node.js            >= 20  (tested on 22.x)      https://nodejs.org
+npm                >= 10  (comes with Node)
+Git                any recent                   https://git-scm.com
+A SQL client       psql  OR  pgAdmin  OR  DBeaver  (to run the .sql files)
+
+PostgreSQL         16   local install (or Neon/Supabase cloud). Needs the pgcrypto extension; pgvector only for the optional bonus
+Neo4j              5.x  Neo4j Aura Free (cloud, easiest) or Neo4j Desktop (local)
+# Docker is NOT required.
+
+# ---------------------------------------------------------------------
+# 3. NPM RUNTIME PACKAGES  (name  installed-version  allowed-range)
+# ---------------------------------------------------------------------
+next                  15.5.28   ^15.1.0     # framework: pages + API route handlers
+react                 19.3.1    ^19.0.0     # UI library
+react-dom             19.3.1    ^19.0.0
+pg                    8.23.1    ^8.13.1     # PostgreSQL driver
+neo4j-driver          5.28.3    ^5.27.0     # Neo4j driver
+jose                  5.10.0    ^5.9.6      # JWT sign/verify (works in middleware)
+bcryptjs              2.4.3     ^2.4.3      # password hashing
+zod                   3.25.76   ^3.24.1     # input validation
+dotenv                16.6.1    ^16.4.7     # loads .env.local for the helper scripts
+qrcode.react          4.2.0     ^4.2.0      # QR codes for item labels
+recharts              2.15.4    ^2.15.0     # charts (temperature, analytics)
+react-force-graph-2d  1.29.2    ^1.25.5     # network graph view (Neo4j data)
+
+# ---------------------------------------------------------------------
+# 4. NPM DEV PACKAGES
+# ---------------------------------------------------------------------
+typescript            5.9.3     ^5.7.2
+@types/node           22.20.5   ^22.10.0
+@types/react          19.3.0    ^19.0.0
+@types/react-dom      19.3.0    ^19.0.0
+@types/pg             8.23.1    ^8.11.10
+@types/bcryptjs       2.4.6     ^2.4.6
+
+# Note: the project includes an .npmrc with  legacy-peer-deps=true
+# (needed because some chart/graph packages have not yet declared React 19 support).
+
+# ---------------------------------------------------------------------
+# 5. POSTGRESQL EXTENSIONS
+# ---------------------------------------------------------------------
+pgcrypto     # REQUIRED  -> SHA-256 hashing (digest()) for the custody ledger
+pgvector     # OPTIONAL  -> only if you add the semantic-search bonus
+
+# ---------------------------------------------------------------------
+# 6. ENVIRONMENT VARIABLES  (copy .env.example to .env.local, never commit it)
+# ---------------------------------------------------------------------
+DATABASE_URL      postgres://postgres:YOUR_PASSWORD@localhost:5432/supplychain
+NEO4J_URI         neo4j://localhost:7687
+NEO4J_USER        neo4j
+NEO4J_PASSWORD    your Neo4j password
+NEO4J_DATABASE    (optional)
+JWT_SECRET        long random string, 32+ chars   (e.g. openssl rand -hex 32)
+
+# ---------------------------------------------------------------------
+# 7. PORTS USED
+# ---------------------------------------------------------------------
+3000   Next.js app            http://localhost:3000
+5432   PostgreSQL
+7474   Neo4j browser          http://localhost:7474
+7687   Neo4j Bolt (driver)
+
+# ---------------------------------------------------------------------
+# 8. INSTALL AND RUN (quick version, full steps are in README.md)
+# ---------------------------------------------------------------------
+npm install
+cp .env.example .env.local        # Windows PowerShell: copy .env.example .env.local
+# create the supplychain database in Postgres and a Neo4j instance (Aura or Desktop), fill .env.local
+npm run neo4j-setup
+# ...load the PostgreSQL files from db/postgres (see README section 6)...
+npm run create-admin -- admin@example.com "StrongPassword123" "Admin"
+npm run dev
+
+# ---------------------------------------------------------------------
+# 9. NPM SCRIPTS
+# ---------------------------------------------------------------------
+npm run dev            # development server
+npm run build          # production build
+npm run start          # run the production build
+npm run typecheck      # TypeScript check
+npm run create-admin   # create the first admin user
+npm run neo4j-setup    # create Neo4j constraints and indexes

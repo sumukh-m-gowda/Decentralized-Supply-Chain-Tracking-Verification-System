@@ -1,6 +1,8 @@
--- Run everything in order:  psql "$DATABASE_URL" -f db/postgres/init.sql   (from the db/postgres folder)
+-- Run everything in order from this folder:
+--   psql "postgres://postgres:YOUR_PASSWORD@localhost:5432/supplychain" -v ON_ERROR_STOP=1 -f init.sql
 \i schema.sql
 \i functions.sql
 \i triggers.sql
 \i views.sql
--- \i seed.sql
+\i migrations.sql
+\i seed.sql

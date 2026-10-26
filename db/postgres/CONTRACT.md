@@ -47,3 +47,12 @@ For `genesis` events, `from_*` and `shipment_id` are null.
 
 ## Also expected
 Indexes on `items(serial_no)`, `custody_events(item_id, event_time)`, `sensor_readings(shipment_id, ts)`, and a GIN index on `to_tsvector('english', products.name)` (used by inventory search).
+
+---
+## Implementation notes (added after the SQL was written)
+
+- The outbox rows are written by the trigger `custody_events_outbox`, not by the functions, so every ledger insert is queued automatically.
+- `custody_events` has one extra column, `shipment_id`, which the Neo4j payload uses.
+- Extra table: `category_limits` (storage temperature range per product category, used by the sensor trigger).
+- Extra validation triggers: shipment status can only move forward, item serial/batch are immutable, user role must match organization type, only manufacturers own products.
+- Everything above is covered by `tests.sql` (32 cases).
