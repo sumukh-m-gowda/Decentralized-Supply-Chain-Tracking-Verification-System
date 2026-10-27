@@ -1,4 +1,4 @@
-// Usage: npm run create-admin -- admin@example.com "StrongPassword123" "Admin Name"
+//"This command runs the setup script to create an admin user with the given email, password, and name."
 import { config } from "dotenv";
 import bcrypt from "bcryptjs";
 import pg from "pg";
