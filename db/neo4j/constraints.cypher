@@ -1,4 +1,4 @@
-// Run once (or: npm run neo4j-setup)
+//run only once
 CREATE CONSTRAINT item_serial IF NOT EXISTS FOR (i:Item) REQUIRE i.serial_no IS UNIQUE;
 CREATE CONSTRAINT org_id IF NOT EXISTS FOR (o:Organization) REQUIRE o.org_id IS UNIQUE;
 CREATE CONSTRAINT batch_id IF NOT EXISTS FOR (b:Batch) REQUIRE b.batch_id IS UNIQUE;
