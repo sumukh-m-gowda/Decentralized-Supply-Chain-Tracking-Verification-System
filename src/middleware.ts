@@ -30,11 +30,11 @@ export async function middleware(req: NextRequest) {
     if (!session) {
       const url = new URL("/login", req.url);
       url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
+      return NextResponse.redirect(url) ;
     }
-    if (!PAGE_ROLES[rule].includes(session.role)) return NextResponse.redirect(new URL(homeFor(session.role), req.url));
+    if(!PAGE_ROLES[rule].includes(session.role)) return NextResponse.redirect(new URL(homeFor(session.role), req.url));
   }
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+export const config ={ matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] } ;
