@@ -82,7 +82,7 @@ export async function syncOutbox(limit = 500) {
         );
         synced++;
       } catch (cause) {
-        error = cause instanceof Error ? cause.message : String(cause);
+        error = "Neo4j synchronization failed; pending events can be retried";
         console.error("Neo4j outbox synchronization failed for event", row.id, cause);
         break;
       }
