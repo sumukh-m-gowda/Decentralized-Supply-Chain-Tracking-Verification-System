@@ -1,15 +1,11 @@
 -- =====================================================================
 -- schema.sql  -  TraceLedger tables, constraints and indexes (PostgreSQL 16)
--- Safe to re-run: drops everything first.   Run order: schema -> functions -> triggers -> views -> migrations -> seed
+-- Creates the schema in a NEW/EMPTY database. It intentionally never drops existing data.
+-- For a deliberate full reset, use reset.sql. Run order: schema -> functions -> triggers -> views -> migrations -> seed
 -- =====================================================================
 
 SET client_min_messages = warning;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- provides digest() for SHA-256
-
--- ---------- clean slate (DDL: DROP) ----------
-DROP TABLE IF EXISTS graph_sync_outbox, verification_logs, alerts, sensor_readings, custody_events,
-                     shipment_items, shipments, items, batches, category_limits, products, users, organizations CASCADE;
-DROP SEQUENCE IF EXISTS item_serial_seq;
 
 -- ---------- organizations ----------
 CREATE TABLE organizations (
