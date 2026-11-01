@@ -21,8 +21,16 @@ export const POST = route(async (req, ctx) => {
 });
 
 export const GET = route(async (req, ctx) => {
-  await requireSession();
+  const s = await requireSession(["manufacturer", "distributor", "retailer", "admin"]);
   const id = num((await ctx.params).id);
+  const sh = await one<{ from_org: number; to_org: number }>(
+    "SELECT from_org, to_org FROM shipments WHERE shipment_id = $1", [id]
+  );
+  if (!sh) throw new HttpError(404, "Shipment not found");
+  if (s.role !== "admin" && s.orgId !== sh.from_org && s.orgId !== sh.to_org) {
+    throw new HttpError(403, "Not your shipment");
+  }
   return json(await query(
-    "SELECT ts, temperature::float AS temperature, humidity::float AS humidity FROM sensor_readings WHERE shipment_id = $1 ORDER BY ts", [id]));
+    "SELECT ts, temperature::float AS temperature, humidity::float AS humidity FROM sensor_readings WHERE shipment_id = $1 ORDER BY ts", [id]
+  ));
 });
