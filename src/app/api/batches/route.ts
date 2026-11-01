@@ -23,6 +23,9 @@ export const POST = route(async (req) => {
   const r = await one<{ batch_id: number }>(
     "SELECT create_batch($1, $2::date, $3::date, $4) AS batch_id",
     [b.product_id, b.manufacture_date, b.expiry_date, b.quantity]);
-  const graphSync = await syncOutbox();
+  const graphSync = await syncOutbox().catch((error) => {
+    console.error("Batch created, but Neo4j sync could not start", error);
+    return { pending: 0, synced: 0, error: "Graph sync could not start; retry from the admin sync page" };
+  });
   return json({ batch_id: r!.batch_id, graph_sync: graphSync }, 201);
 });
