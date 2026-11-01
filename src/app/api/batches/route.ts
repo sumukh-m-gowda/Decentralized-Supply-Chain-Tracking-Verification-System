@@ -23,6 +23,6 @@ export const POST = route(async (req) => {
   const r = await one<{ batch_id: number }>(
     "SELECT create_batch($1, $2::date, $3::date, $4) AS batch_id",
     [b.product_id, b.manufacture_date, b.expiry_date, b.quantity]);
-  syncOutbox().catch(() => {}); // best effort; pending rows can be re-synced later
-  return json({ batch_id: r!.batch_id }, 201);
+  const graphSync = await syncOutbox();
+  return json({ batch_id: r!.batch_id, graph_sync: graphSync }, 201);
 });
