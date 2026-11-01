@@ -6,13 +6,14 @@ Everything here was tested on PostgreSQL 16 (32 of 32 database tests pass, and t
 
 | File | Purpose | Brief item |
 |---|---|---|
-| `schema.sql` | 13 tables, primary and foreign keys, CHECK/UNIQUE/NOT NULL, 16 indexes (incl. partial and GIN full-text). **Drops everything first.** | DDL, constraints, indexes |
+| `schema.sql` | Creates 13 tables, primary and foreign keys, CHECK/UNIQUE/NOT NULL, and 16 indexes. Does not drop existing data. | DDL, constraints, indexes |
 | `functions.sql` | `compute_event_hash`, `create_batch`, `transfer_custody` (atomic transaction), `verify_chain` | Transactions, stored functions |
 | `triggers.sql` | Hash-chain trigger, append-only ledger, Neo4j outbox, temperature-alert trigger, 4 data-validation triggers | Triggers, DB-level validation |
 | `views.sql` | `v_item_timeline`, `v_org_inventory`, `v_active_alerts`, `v_shipment_summary` | Views |
 | `migrations.sql` | ALTER and DROP demonstrations (safe to re-run) | ALTER, DROP |
 | `seed.sql` | Demo organizations, users, products, batches, 4 shipments, readings, one alert | Demo data |
-| `init.sql` | Runs all of the above in order | |
+| `init.sql` | Initializes an empty database in one transaction; refuses to overwrite existing TraceLedger tables. | |
+| `reset.sql` | Explicit destructive reset followed by initialization. Deletes existing TraceLedger data. | |
 | `queries.sql` | 11 report queries (JOIN, GROUP BY, HAVING, subquery, window LAG, recursive CTE, full-text) + DML and rollback demos | DML, queries |
 | `explain.sql` | Index vs no index with `EXPLAIN ANALYZE` (about 97 ms down to 0.5 ms in our test) | Indexing |
 | `tests.sql` | 32 automated test cases, prints PASS/FAIL, rolls back (your data is safe) | Test cases |
@@ -23,14 +24,14 @@ Everything here was tested on PostgreSQL 16 (32 of 32 database tests pass, and t
 
 1. Create an empty database called `supplychain` (pgAdmin: right-click Databases > Create > Database).
 2. Put its connection string in `.env.local` as `DATABASE_URL`.
-3. Load everything. Open a terminal **in this folder** (`db/postgres`):
+3. Initialize the empty database. `init.sql` is transactional and refuses to overwrite existing TraceLedger tables. Open a terminal **in this folder** (`db/postgres`):
 
 ```
 psql "postgres://postgres:YOUR_PASSWORD@localhost:5432/supplychain" -v ON_ERROR_STOP=1 -f init.sql
 ```
 
 On Windows `psql` is usually at `C:\Program Files\PostgreSQL\16\bin\psql.exe`. If `psql` is not recognized, either use the full path in quotes, or use pgAdmin: open **Query Tool**, use the folder icon to open each file, and press F5, in this order:
-`schema.sql, functions.sql, triggers.sql, views.sql, migrations.sql, seed.sql`.
+`schema.sql, functions.sql, triggers.sql, views.sql, migrations.sql, seed.sql` in that order. Do not run `schema.sql` against an existing database.
 
 4. Run the tests (needs `psql`, because the script uses psql commands):
 ```
@@ -74,3 +75,14 @@ With the seed you do **not** need `npm run create-admin`.
 - **Truncation is detected.** `verify_chain()` also checks that the last holder in the ledger equals `items.current_owner_org`, which catches a deleted final event (test T31).
 - **The outbox is written by a trigger**, so every ledger event, from any code path, is queued for Neo4j.
 - **Temperature limits live in a table** (`category_limits`), not in code: Pharma 2 to 8 C, Food -2 to 6 C, Electronics -20 to 50 C, default -10 to 40 C.
+
+
+## Resetting the database (destructive)
+
+Do not use this for normal setup or upgrades. It drops all TraceLedger tables, dependent objects, and data before rebuilding the schema and demo seed. Back up anything important first.
+
+```bash
+psql "postgres://postgres:YOUR_PASSWORD@localhost:5432/supplychain" -v ON_ERROR_STOP=1 -f reset.sql
+```
+
+For an existing installation, apply a reviewed migration instead of rerunning `init.sql` or `schema.sql`.
