@@ -9,6 +9,6 @@ export const PATCH = route(async (req, ctx) => {
   const orgId = await requireApprovedOrg(s);
   const id = num((await ctx.params).id);
   await query("SELECT transfer_custody($1, $2)", [id, orgId]);
-  syncOutbox().catch(() => {});
-  return json({ ok: true });
+  const graphSync = await syncOutbox();
+  return json({ ok: true, graph_sync: graphSync });
 });
