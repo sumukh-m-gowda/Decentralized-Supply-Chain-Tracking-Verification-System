@@ -1,10 +1,8 @@
 -- =====================================================================
 -- seed.sql - demo data. All demo accounts use the password  Password123
--- Run after migrations.sql, on an empty database (schema.sql resets everything).  (ASCII only)
+-- Run after migrations.sql, on a newly initialized empty database. (ASCII only)
 -- =====================================================================
 SET client_min_messages = warning;
-BEGIN;
-
 -- ---------- organizations (ids 1..6) ----------
 INSERT INTO organizations (name, type, license_no, status) VALUES
   ('Acme Pharma Ltd',     'manufacturer', 'LIC-MFR-001', 'approved'),
@@ -94,4 +92,3 @@ UPDATE items SET status = 'sold' WHERE serial_no = 'SN-000003';
 INSERT INTO verification_logs (item_id, scan_city, result)
 SELECT item_id, 'Bengaluru', 'authentic' FROM items WHERE serial_no IN ('SN-000001', 'SN-000002');
 
-COMMIT;
