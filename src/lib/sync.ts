@@ -1,11 +1,9 @@
-import { query } from "./db";
+import { tx } from "./db";
 import { cypherWrite } from "./neo4j";
 
 /**
  * Outbox payload written by the Postgres custody functions/triggers
- * (see db/postgres/CONTRACT.md):
- * { event_id, event_type, event_time, item_id, serial_no, batch_id, product_id, product_name,
- *   manufacturer_org, manufacturer_name, from_org?, from_name?, from_type?, to_org, to_name, to_type, shipment_id? }
+ * (see db/postgres/CONTRACT.md).
  */
 interface Payload {
   event_id: number; event_type: string; event_time: string; item_id: number; serial_no: string;
@@ -43,21 +41,56 @@ export async function applyEvent(p: Payload) {
   await cypherWrite(stmts);
 }
 
-/** Push pending outbox rows into Neo4j in order. Safe to re-run: every write is a MERGE. */
+/**
+ * Drain the outbox in ID order. A transaction-scoped advisory lock prevents
+ * concurrent sync requests from applying events out of order.
+ * A failed Neo4j write leaves that row and all later rows pending for retry.
+ */
 export async function syncOutbox(limit = 500) {
-  const rows = await query<{ id: number; payload: Payload }>(
-    "SELECT id, payload FROM graph_sync_outbox WHERE synced = false ORDER BY id LIMIT $1", [limit]);
-  let synced = 0;
-  let error: string | null = null;
-  for (const r of rows) {
-    try {
-      await applyEvent(r.payload);
-      await query("UPDATE graph_sync_outbox SET synced = true, synced_at = now() WHERE id = $1", [r.id]);
-      synced++;
-    } catch (e: any) {
-      error = e.message; // stop here so events stay in order; the row stays pending
-      break;
-    }
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error("Outbox sync limit must be a positive integer");
   }
-  return { pending: rows.length - synced, synced, error };
+
+  return tx(async (client) => {
+    const lock = await client.query<{ locked: boolean }>(
+      "SELECT pg_try_advisory_xact_lock(72120261101) AS locked"
+    );
+    if (!lock.rows[0]?.locked) {
+      const pending = await client.query<{ count: string }>(
+        "SELECT count(*)::text AS count FROM graph_sync_outbox WHERE synced = false"
+      );
+      return {
+        pending: Number(pending.rows[0]?.count ?? 0),
+        synced: 0,
+        error: "Another synchronization run is already in progress"
+      };
+    }
+
+    const rows = await client.query<{ id: number; payload: Payload }>(
+      "SELECT id, payload FROM graph_sync_outbox WHERE synced = false ORDER BY id LIMIT $1",
+      [limit]
+    );
+    let synced = 0;
+    let error: string | null = null;
+
+    for (const row of rows.rows) {
+      try {
+        await applyEvent(row.payload);
+        await client.query(
+          "UPDATE graph_sync_outbox SET synced = true, synced_at = now() WHERE id = $1 AND synced = false",
+          [row.id]
+        );
+        synced++;
+      } catch (cause) {
+        error = cause instanceof Error ? cause.message : String(cause);
+        console.error("Neo4j outbox synchronization failed for event", row.id, cause);
+        break;
+      }
+    }
+
+    const pending = await client.query<{ count: string }>(
+      "SELECT count(*)::text AS count FROM graph_sync_outbox WHERE synced = false"
+    );
+    return { pending: Number(pending.rows[0]?.count ?? 0), synced, error };
+  });
 }
