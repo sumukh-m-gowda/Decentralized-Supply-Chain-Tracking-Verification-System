@@ -33,7 +33,7 @@ export default function Products() {
 
   return (
     <>
-      <h1>Products and batches</h1>
+      <h1>Products And Batches</h1>
       <ErrorMsg msg={error} />
       {ok && <div className="notice">{ok}</div>}
       <div className="cols noprint">

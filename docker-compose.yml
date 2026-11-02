@@ -1,7 +1,7 @@
-# Local databases for development only.
+
 services:
   postgres:
-    image: pgvector/pgvector:pg16   # plain Postgres + pgvector (optional bonus)
+    image: pgvector/pgvector:pg16   
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: supplychain
